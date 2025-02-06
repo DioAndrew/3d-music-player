@@ -2,7 +2,7 @@ import './App.css';
 import './output.css';
 import {Canvas} from "@react-three/fiber";
 import MediaPlayer from './component/mediaPlayer';
-import { Suspense } from 'react';
+import { Suspense, useRef } from 'react';
 function App() {
 
   function Loader(){
@@ -13,11 +13,15 @@ function App() {
     )
   }
 
+  const audioRef = useRef()
+
   return (
     <div className="App">
+      <audio ref={audioRef} id='audio'>
+      </audio>
       <Suspense fallback={Loader}>
         <Canvas>
-            <MediaPlayer />
+            <MediaPlayer audioRef={audioRef}/>
         </Canvas>
       </Suspense>
     </div>
