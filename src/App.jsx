@@ -20,7 +20,7 @@ function App() {
       <audio ref={audioRef} id='audio'>
       </audio>
       <Suspense fallback={Loader}>
-        <Canvas>
+        <Canvas camera={{position: [0,0,10]}}>
             <MediaPlayer audioRef={audioRef}/>
         </Canvas>
       </Suspense>

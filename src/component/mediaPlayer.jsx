@@ -1,8 +1,9 @@
 import {Html, OrbitControls} from '@react-three/drei'
 import { useEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import {faPlay, faPause} from '@fortawesome/free-solid-svg-icons'
-
+import {faPlay, faPause, faForwardStep, faBackwardStep} from '@fortawesome/free-solid-svg-icons'
+import { useFrame } from '@react-three/fiber'
+import random from "random"
 
 const PlayPauseBtn = (props) => {
     return(
@@ -11,18 +12,18 @@ const PlayPauseBtn = (props) => {
 }
 const NextSong = (props) => {
     return(
-        <button className='controllBtn' onClick={props.nextSong}>Next</button>
+        <button className='controllBtn' onClick={props.nextSong}><FontAwesomeIcon icon={faForwardStep} /></button>
     )
 }
 const PrevSong = (props) => {
     return(
-        <button className='controllBtn' onClick={props.prevSong}>Prev</button>
+        <button className='controllBtn' onClick={props.prevSong}><FontAwesomeIcon icon={faBackwardStep} /></button>
     )
 }
 
 const MediaPlayer = (props) => {
     return(
-        <div className='mediaPlayer p-20'>
+        <div className='mediaPlayer'>
             <div className='flex'>
                 <h2 className='text-white'>{props.songDuration}</h2>
                 <input ref={props.songSliderRef} className='m-2' type="range" min={0} onChange={props.seekSong} name="songSlider" id="songSlider" />
@@ -30,6 +31,37 @@ const MediaPlayer = (props) => {
             </div>
         </div>
     )
+}
+
+const SongImage = () => {
+    return(
+        <img className='songImage' src="./image/no_image.png" alt="no_image.png" />
+    )
+}
+
+const BoxBackground = (props) => {
+        const position = []
+        const box = []
+        let i = 0
+        for(let y = -10; y <= 15; y += 4){
+            for(let x = -30; x <= 30; x += 4){
+                position.push([x,y,-1])
+            }
+        }
+        for(let z = 0; z <= 30; z += 4){
+            for(let x = -30; x <= 30; x += 4){
+                position.push([x,-12, z])
+            }
+        }
+        position.map((pos, index) => {
+            box.push(
+                <mesh key={i} position={pos} ref={(el) => props.boxRef.current[index] = el}>
+                    <boxGeometry />
+                    <meshStandardMaterial />
+                </mesh>
+            )
+        })
+    return box
 }
 
 // const HtmlMusicPlayer = () => {
@@ -150,6 +182,10 @@ const PlayerUI = (props) => {
     const songList = ["audio1.mp3", "audio2.mp3"]
 
 
+    const boxRef = useRef([])
+
+    const boxColor = [0x7e1891, 0xe73879, 0xf26b0f, 0xfcc737, 0x2973b2, 0x48a6a7, 0x9acbd0, 0xf2efe7, 0xdad2ff, 0xb2a5ff, 0x71c9ce, 0xa6e3e9, 0xcbf1f5, 0xe3fdfd, 0xdd88cf]
+
     function audioPlay(){
         props.audioRef.current.play()
         setPlay(() => true)
@@ -190,6 +226,10 @@ const PlayerUI = (props) => {
         props.audioRef.current.addEventListener("timeupdate", timeUpdate)
         props.audioRef.current.addEventListener("loadeddata", getSongFullDuration)
         
+        boxRef.current.map((el) => {
+            el.material.color.set(random.choice(boxColor))
+        })
+
         return(
             () => {
                 props.audioRef.current.removeEventListener("timeupdate", timeUpdate)
@@ -208,6 +248,15 @@ const PlayerUI = (props) => {
             audioPause()
         })
     }, [currentSong])
+
+    useFrame((_, delta) => {
+        if(isPlay){
+            boxRef.current.map((el) => {
+                el.rotation.x += delta
+                el.rotation.y += delta
+            })
+        }
+    })
 
     function playBtnHandler(){
         isPlay ? audioPause() : audioPlay()
@@ -229,21 +278,27 @@ const PlayerUI = (props) => {
         return(
             <>
                 <group>
+                    <BoxBackground boxRef={boxRef}/>
+                </group>
+                <group>
                     <Html transform >
                         <MediaPlayer seekSong={seekSong} songDuration={songDuration} songSliderRef={songSliderRef} fullDuration={fullDuration}/>
                     </Html>
-                    <Html transform position={[0,-1,1]}>
+                    <Html transform position={[0,2,1]}>
+                        <SongImage />
+                    </Html>
+                    <Html transform position={[0,-2.5,1]}>
                         <PlayPauseBtn playBtnHandler={playBtnHandler} isPlay={isPlay}/>
                     </Html>
-                    <Html transform position={[2,-1,1]}>
+                    <Html transform position={[2,-2.5,1]}>
                         <NextSong nextSong={nextSong} />
                     </Html>
-                    <Html transform position={[-2,-1,1]}>
+                    <Html transform position={[-2,-2.5,1]}>
                         <PrevSong prevSong={prevSong} />
                     </Html>
                 </group>
 
-                <OrbitControls />
+                <OrbitControls enableZoom={false} maxPolarAngle={Math.PI / 1.5} minAzimuthAngle={-Math.PI / 4} maxAzimuthAngle={Math.PI / 4} enablePan={false}/>
                 <ambientLight intensity={1} />
             </>
         )
