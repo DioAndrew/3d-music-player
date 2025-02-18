@@ -11,6 +11,7 @@
     "@react-three/drei": "^9.121.4",
     "@react-three/fiber": "^8.17.14",
     "@tailwindcss/cli": "^4.0.2",
+    "axios": "^1.7.9",
     "cra-template": "1.2.0",
     "maath": "^0.10.8",
     "random": "^5.1.1",

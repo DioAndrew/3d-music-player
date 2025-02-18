@@ -1,23 +1,30 @@
-import {Html, OrbitControls} from '@react-three/drei'
+import {Html, OrbitControls, Float} from '@react-three/drei'
 import { useEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import {faPlay, faPause, faForwardStep, faBackwardStep} from '@fortawesome/free-solid-svg-icons'
+import {faPlay, faPause, faForwardStep, faBackwardStep, faSun, faMoon} from '@fortawesome/free-solid-svg-icons'
 import { useFrame } from '@react-three/fiber'
 import random from "random"
+import axios from "axios"
 
 const PlayPauseBtn = (props) => {
     return(
-        <button className='controllBtn' onClick={props.playBtnHandler}>{props.isPlay ? <FontAwesomeIcon icon={faPause} /> : <FontAwesomeIcon icon={faPlay} />}</button>
+        <button className='controllBtn text-black' onClick={props.playBtnHandler}>{props.isPlay ? <FontAwesomeIcon icon={faPause} /> : <FontAwesomeIcon icon={faPlay} />}</button>
     )
 }
 const NextSong = (props) => {
     return(
-        <button className='controllBtn' onClick={props.nextSong}><FontAwesomeIcon icon={faForwardStep} /></button>
+        <button className='controllBtn text-black' onClick={props.nextSong}><FontAwesomeIcon icon={faForwardStep} /></button>
     )
 }
 const PrevSong = (props) => {
     return(
-        <button className='controllBtn' onClick={props.prevSong}><FontAwesomeIcon icon={faBackwardStep} /></button>
+        <button className='controllBtn text-black' onClick={props.prevSong}><FontAwesomeIcon icon={faBackwardStep} /></button>
+    )
+}
+
+const ModeButton = (props) => {
+    return(
+        <button className='controllBtn text-black' onClick={props.darkModeBtnHandler}>{props.isDarkMode ? <FontAwesomeIcon icon={faSun}/> : <FontAwesomeIcon icon={faMoon}/> }</button>
     )
 }
 
@@ -25,9 +32,9 @@ const MediaPlayer = (props) => {
     return(
         <div className='mediaPlayer'>
             <div className='flex'>
-                <h2 className='text-white'>{props.songDuration}</h2>
+                <h2 className='text-black'>{props.songDuration}</h2>
                 <input ref={props.songSliderRef} className='m-2' type="range" min={0} onChange={props.seekSong} name="songSlider" id="songSlider" />
-                <h2 className='text-white'>{props.fullDuration}</h2>
+                <h2 className='text-black'>{props.fullDuration}</h2>
             </div>
         </div>
     )
@@ -186,6 +193,10 @@ const PlayerUI = (props) => {
 
     const boxColor = [0x7e1891, 0xe73879, 0xf26b0f, 0xfcc737, 0x2973b2, 0x48a6a7, 0x9acbd0, 0xf2efe7, 0xdad2ff, 0xb2a5ff, 0x71c9ce, 0xa6e3e9, 0xcbf1f5, 0xe3fdfd, 0xdd88cf]
 
+    const [isDarkMode, setDarkMode] = useState(true)
+
+    const imageRef = useRef()
+
     function audioPlay(){
         props.audioRef.current.play()
         setPlay(() => true)
@@ -220,8 +231,16 @@ const PlayerUI = (props) => {
             }
     }
 
+    function darkModeBtnHandler(){
+        console.log(isDarkMode)
+        setDarkMode((prev) => !prev)
+        document.documentElement.classList.toggle("dark")
+        
+    }
 
     useEffect(() => {
+        console.log("set song .....  ")
+        props.audioRef.current.src = "https://andrew26.pythonanywhere.com/music/iMeiden-Tower-Light-Fireworks-ft-Rachie_7ixxul8h33E.mp3"
 
         props.audioRef.current.addEventListener("timeupdate", timeUpdate)
         props.audioRef.current.addEventListener("loadeddata", getSongFullDuration)
@@ -229,7 +248,7 @@ const PlayerUI = (props) => {
         boxRef.current.map((el) => {
             el.material.color.set(random.choice(boxColor))
         })
-
+        
         return(
             () => {
                 props.audioRef.current.removeEventListener("timeupdate", timeUpdate)
@@ -241,8 +260,6 @@ const PlayerUI = (props) => {
 
 
     useEffect(() => {
-        console.log("set song .....  ")
-        props.audioRef.current.src = `./audio/${songList.at(currentSong)}`
         return(() => {
             console.log("Music pause, change song")
             audioPause()
@@ -255,6 +272,7 @@ const PlayerUI = (props) => {
                 el.rotation.x += delta
                 el.rotation.y += delta
             })
+            imageRef.current.rotation.y += delta
         }
     })
 
@@ -275,18 +293,34 @@ const PlayerUI = (props) => {
         setCurrentSong((prev) => (prev - 1) % songList.length )
     }
 
+    async function getSongList() {
+        const endpoint = `https://andrew26.pythonanywhere.com/music/songlist`
+        try {
+            const { data } = await axios.get(endpoint)
+            console.log(data)
+            return data
+        } catch (error) {
+            console.log(error)
+        }
+
+    }
+
         return(
             <>
                 <group>
-                    <BoxBackground boxRef={boxRef}/>
+                    <Float rotationIntensity={1} floatIntensity={1} floatingRange={[-5,1.5]}>
+                        <BoxBackground boxRef={boxRef}/>
+                    </Float>
                 </group>
                 <group>
-                    <Html transform >
+                    <Html transform  position={[0,-1,0]}>
                         <MediaPlayer seekSong={seekSong} songDuration={songDuration} songSliderRef={songSliderRef} fullDuration={fullDuration}/>
                     </Html>
-                    <Html transform position={[0,2,1]}>
-                        <SongImage />
-                    </Html>
+                    <group ref={imageRef}>    
+                        <Html transform position={[0,2,1]}>
+                            <SongImage />
+                        </Html>
+                    </group>
                     <Html transform position={[0,-2.5,1]}>
                         <PlayPauseBtn playBtnHandler={playBtnHandler} isPlay={isPlay}/>
                     </Html>
@@ -295,6 +329,9 @@ const PlayerUI = (props) => {
                     </Html>
                     <Html transform position={[-2,-2.5,1]}>
                         <PrevSong prevSong={prevSong} />
+                    </Html>
+                    <Html transform position={[3,4,1]}>
+                        <ModeButton isDarkMode={isDarkMode} setDarkMode={setDarkMode} darkModeBtnHandler={darkModeBtnHandler}/>
                     </Html>
                 </group>
 
