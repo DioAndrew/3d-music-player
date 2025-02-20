@@ -1,7 +1,7 @@
 import {Html, OrbitControls, Float} from '@react-three/drei'
 import { useEffect, useRef, useState } from 'react'
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import {faPlay, faPause, faForwardStep, faBackwardStep, faSun, faMoon} from '@fortawesome/free-solid-svg-icons'
+import {faPlay, faPause, faForwardStep, faBackwardStep, faSun, faMoon, faSpin, faSpinner} from '@fortawesome/free-solid-svg-icons'
 import { useFrame } from '@react-three/fiber'
 import random from "random"
 import axios from "axios"
@@ -28,6 +28,82 @@ const ModeButton = (props) => {
     )
 }
 
+const SongTitle = (props) => {
+    return(
+        <>
+        <h1 className='song-title text-center text-black'>
+            {props.songName ? props.songName : "Song Name"}
+        </h1>
+        <h1 className='song-title text-center text-black'>
+            {props.songArtist ? props.songArtist : "Artist"}
+        </h1>
+        </>
+    )
+}
+
+const SongList = () => {
+    return(
+        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
+            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
+                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
+                    <tr>
+                        <th scope="col" class="px-6 py-3">
+                            Product name
+                        </th>
+                        <th scope="col" class="px-6 py-3">
+                            Color
+                        </th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            Apple MacBook Pro 17"
+                        </th>
+                        <td class="px-6 py-4">
+                            Silver
+                        </td>
+    
+                    </tr>
+                    <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            Microsoft Surface Pro
+                        </th>
+                        <td class="px-6 py-4">
+                            White
+                        </td>
+                    </tr>
+                    <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            Magic Mouse 2
+                        </th>
+                        <td class="px-6 py-4">
+                            Black
+                        </td>
+                    </tr>
+                    <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            Google Pixel Phone
+                        </th>
+                        <td class="px-6 py-4">
+                            Gray
+                        </td>
+                    </tr>
+                    <tr>
+                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
+                            Apple Watch 5
+                        </th>
+                        <td class="px-6 py-4">
+                            Red
+                        </td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+    )
+}
+
 const MediaPlayer = (props) => {
     return(
         <div className='mediaPlayer'>
@@ -40,9 +116,9 @@ const MediaPlayer = (props) => {
     )
 }
 
-const SongImage = () => {
+const SongImage = (props) => {
     return(
-        <img className='songImage' src="./image/no_image.png" alt="no_image.png" />
+        <img className='songImage' ref={props.coverImgRef} src="./image/no_image.png" alt="no_image" />
     )
 }
 
@@ -186,7 +262,9 @@ const PlayerUI = (props) => {
     
     const songSliderRef = useRef()
     const [fullDuration, setFullDuration] = useState()
-    const songList = ["audio1.mp3", "audio2.mp3"]
+    const [songList, setSongList] = useState(false)
+    const [songName, setSongName] = useState()
+    const [songArtist, setSongArtist] = useState()
 
 
     const boxRef = useRef([])
@@ -196,10 +274,38 @@ const PlayerUI = (props) => {
     const [isDarkMode, setDarkMode] = useState(true)
 
     const imageRef = useRef()
+    const coverImgRef = useRef()
 
+    async function GetSongList(){
+        const endpoint = `https://andrew26.pythonanywhere.com/music/songlist`
+        useEffect(() => {
+            async function fectData(){
+                props.setLoading(() => true)
+                const {data} = await axios.get(endpoint)
+                setSongList(() => data)
+                coverImgRef.current.src = data[0].coverImg
+                setSongName(data[0].name)
+                setSongArtist(data[0].artist)
+                setSong(data[0].name)
+                props.setLoading(() => false)
+            }
+            try {
+                fectData()
+            } catch (error) {
+                console.log(error)
+            }
+            
+        }, [])
+    }
+    GetSongList()
     function audioPlay(){
         props.audioRef.current.play()
         setPlay(() => true)
+    }
+    
+    function setSong(name){
+        console.log(`set song ..... ${name} `)
+        props.audioRef.current.src = `https://andrew26.pythonanywhere.com/music/${name}.mp3`
     }
 
     function audioPause(){
@@ -239,9 +345,7 @@ const PlayerUI = (props) => {
     }
 
     useEffect(() => {
-        console.log("set song .....  ")
-        props.audioRef.current.src = "https://andrew26.pythonanywhere.com/music/iMeiden-Tower-Light-Fireworks-ft-Rachie_7ixxul8h33E.mp3"
-
+        
         props.audioRef.current.addEventListener("timeupdate", timeUpdate)
         props.audioRef.current.addEventListener("loadeddata", getSongFullDuration)
         
@@ -293,18 +397,6 @@ const PlayerUI = (props) => {
         setCurrentSong((prev) => (prev - 1) % songList.length )
     }
 
-    async function getSongList() {
-        const endpoint = `https://andrew26.pythonanywhere.com/music/songlist`
-        try {
-            const { data } = await axios.get(endpoint)
-            console.log(data)
-            return data
-        } catch (error) {
-            console.log(error)
-        }
-
-    }
-
         return(
             <>
                 <group>
@@ -313,25 +405,37 @@ const PlayerUI = (props) => {
                     </Float>
                 </group>
                 <group>
-                    <Html transform  position={[0,-1,0]}>
+                    <Html transform  position={[0,-3,0]}>
                         <MediaPlayer seekSong={seekSong} songDuration={songDuration} songSliderRef={songSliderRef} fullDuration={fullDuration}/>
                     </Html>
-                    <group ref={imageRef}>    
-                        <Html transform position={[0,2,1]}>
+                    <group ref={imageRef} position={[0,0,1]}>    
+                        <Html transform position={[0,2.5,1]}>
+                            <SongImage coverImgRef={coverImgRef}/>
+                        </Html>
+                        {/* <Html transform rotation={[0,2.1,0]} position={[1.5,2,-1]}>
                             <SongImage />
                         </Html>
+                        <Html transform rotation={[0,-2.1,0]} position={[-1.5,2,-1]}>
+                            <SongImage />
+                        </Html> */}
                     </group>
-                    <Html transform position={[0,-2.5,1]}>
+                    <Html transform position={[0,-1,1]}>
+                        <SongTitle songName={songName} songArtist={songArtist}/>
+                    </Html>
+                    <Html transform position={[0,-4,1]}>
                         <PlayPauseBtn playBtnHandler={playBtnHandler} isPlay={isPlay}/>
                     </Html>
-                    <Html transform position={[2,-2.5,1]}>
+                    <Html transform position={[2,-4,1]}>
                         <NextSong nextSong={nextSong} />
                     </Html>
-                    <Html transform position={[-2,-2.5,1]}>
+                    <Html transform position={[-2,-4,1]}>
                         <PrevSong prevSong={prevSong} />
                     </Html>
-                    <Html transform position={[3,4,1]}>
+                    <Html transform position={[4,4,1]}>
                         <ModeButton isDarkMode={isDarkMode} setDarkMode={setDarkMode} darkModeBtnHandler={darkModeBtnHandler}/>
+                    </Html>
+                    <Html transform position={[6,2,0]}>
+                        <SongList />
                     </Html>
                 </group>
 
