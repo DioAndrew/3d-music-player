@@ -5,6 +5,8 @@ import {faPlay, faPause, faForwardStep, faBackwardStep, faSun, faMoon, faSpin, f
 import { useFrame } from '@react-three/fiber'
 import random from "random"
 import axios from "axios"
+import { ListItem, ListItemButton, ListItemText, Box } from '@mui/material';
+import { FixedSizeList } from 'react-window';
 
 const PlayPauseBtn = (props) => {
     return(
@@ -41,65 +43,33 @@ const SongTitle = (props) => {
     )
 }
 
-const SongList = () => {
+const SongList = (props) => {
+    const { songList, setSong } = props;
+
+    function rowItem(ListProps){
+        const {index, style} = ListProps
+        if(songList){
+            return(
+                    <ListItem style={style} key={index} component="div" disablePadding>
+                        <ListItemButton onClick={() => setSong(index)}>
+                            <ListItemText primary={`${songList[index].name} - ${songList[index].artist}`} />
+                        </ListItemButton>
+                    </ListItem>
+            )
+        }
+        // else return loading
+    }
     return(
-        <div class="relative overflow-x-auto shadow-md sm:rounded-lg">
-            <table class="w-full text-sm text-left rtl:text-right text-gray-500 dark:text-gray-400">
-                <thead class="text-xs text-gray-700 uppercase bg-gray-50 dark:bg-gray-700 dark:text-gray-400">
-                    <tr>
-                        <th scope="col" class="px-6 py-3">
-                            Product name
-                        </th>
-                        <th scope="col" class="px-6 py-3">
-                            Color
-                        </th>
-                    </tr>
-                </thead>
-                <tbody>
-                    <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            Apple MacBook Pro 17"
-                        </th>
-                        <td class="px-6 py-4">
-                            Silver
-                        </td>
-    
-                    </tr>
-                    <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            Microsoft Surface Pro
-                        </th>
-                        <td class="px-6 py-4">
-                            White
-                        </td>
-                    </tr>
-                    <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            Magic Mouse 2
-                        </th>
-                        <td class="px-6 py-4">
-                            Black
-                        </td>
-                    </tr>
-                    <tr class="odd:bg-white odd:dark:bg-gray-900 even:bg-gray-50 even:dark:bg-gray-800 border-b dark:border-gray-700 border-gray-200">
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            Google Pixel Phone
-                        </th>
-                        <td class="px-6 py-4">
-                            Gray
-                        </td>
-                    </tr>
-                    <tr>
-                        <th scope="row" class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap dark:text-white">
-                            Apple Watch 5
-                        </th>
-                        <td class="px-6 py-4">
-                            Red
-                        </td>
-                    </tr>
-                </tbody>
-            </table>
-        </div>
+        <Box sx={{ width: '100%', height: 400, maxWidth: 360, bgcolor: 'background.paper' }}>
+            <FixedSizeList
+                height={400}
+                width={280}
+                itemSize={45}
+                itemCount={songList ? songList.length : 0}
+            >
+                {rowItem}
+            </FixedSizeList>
+        </Box>
 
     )
 }
@@ -286,8 +256,7 @@ const PlayerUI = (props) => {
                 coverImgRef.current.src = data[0].coverImg
                 setSongName(data[0].name)
                 setSongArtist(data[0].artist)
-                setSong(data[0].name)
-                props.setLoading(() => false)
+                props.audioRef.current.src = `https://andrew26.pythonanywhere.com/music/${data[0].name}.mp3`
             }
             try {
                 fectData()
@@ -303,7 +272,14 @@ const PlayerUI = (props) => {
         setPlay(() => true)
     }
     
-    function setSong(name){
+    function setSong(id){
+        props.setLoading(() => true)
+        const name = songList[id].name
+        const image = songList[id].coverImg
+        const artist = songList[id].artist
+        coverImgRef.current.src = image
+        setSongName(name)
+        setSongArtist(artist)
         console.log(`set song ..... ${name} `)
         props.audioRef.current.src = `https://andrew26.pythonanywhere.com/music/${name}.mp3`
     }
@@ -321,6 +297,7 @@ const PlayerUI = (props) => {
         setFullDuration(() => `${formatMinute}:${formatSecound}`) 
         songSliderRef.current.setAttribute('max', props.audioRef.current.duration)
         songSliderRef.current.value = 0
+        props.setLoading(() => false)
         
     }
 
@@ -434,8 +411,8 @@ const PlayerUI = (props) => {
                     <Html transform position={[4,4,1]}>
                         <ModeButton isDarkMode={isDarkMode} setDarkMode={setDarkMode} darkModeBtnHandler={darkModeBtnHandler}/>
                     </Html>
-                    <Html transform position={[6,2,0]}>
-                        <SongList />
+                    <Html transform position={[8,2,0]}>
+                        <SongList songList={songList} setSong={setSong}/>
                     </Html>
                 </group>
 
