@@ -44,14 +44,24 @@ const SongTitle = (props) => {
 }
 
 const SongList = (props) => {
-    const { songList, setSong } = props;
-
+    const { songList, setSong, currentSong } = props;
+    const style = {
+        /* From https://css.glass */
+        background: "rgba(0, 0, 0, 0.2);",
+        borderRadius: "16px;",
+        boxShadow: "0 4px 30px rgba(0, 0, 0, 0.1);",
+        backdropFilter: "blur(5px);",
+        webkitBackdropFilter: "blur(5px);",
+        border: "1px solid rgba(0, 0, 0, 0.3);"
+    }
     function rowItem(ListProps){
         const {index, style} = ListProps
         if(songList){
             return(
                     <ListItem style={style} key={index} component="div" disablePadding>
-                        <ListItemButton onClick={() => setSong(index)}>
+                        <ListItemButton onClick={() => {
+                            currentSong.current = index
+                            setSong()}}>
                             <ListItemText primary={`${songList[index].name} - ${songList[index].artist}`} />
                         </ListItemButton>
                     </ListItem>
@@ -60,7 +70,7 @@ const SongList = (props) => {
         // else return loading
     }
     return(
-        <Box sx={{ width: '100%', height: 400, maxWidth: 360, bgcolor: 'background.paper' }}>
+        <Box sx={{ width: '100%', height: 400, maxWidth: 360 }} className={"songList"}>
             <FixedSizeList
                 height={400}
                 width={280}
@@ -228,7 +238,7 @@ const PlayerUI = (props) => {
 
     const [isPlay, setPlay] = useState(false)
     const [songDuration, setSongDuration] = useState("00:00")
-    const [currentSong, setCurrentSong] = useState(0)
+    const currentSong = useRef(0)
     
     const songSliderRef = useRef()
     const [fullDuration, setFullDuration] = useState()
@@ -272,11 +282,11 @@ const PlayerUI = (props) => {
         setPlay(() => true)
     }
     
-    function setSong(id){
+    function setSong(){
         props.setLoading(() => true)
-        const name = songList[id].name
-        const image = songList[id].coverImg
-        const artist = songList[id].artist
+        const name = songList.at(currentSong.current).name
+        const image = songList.at(currentSong.current).coverImg
+        const artist = songList.at(currentSong.current).artist
         coverImgRef.current.src = image
         setSongName(name)
         setSongArtist(artist)
@@ -339,14 +349,6 @@ const PlayerUI = (props) => {
             
     }, [])
 
-
-    useEffect(() => {
-        return(() => {
-            console.log("Music pause, change song")
-            audioPause()
-        })
-    }, [currentSong])
-
     useFrame((_, delta) => {
         if(isPlay){
             boxRef.current.map((el) => {
@@ -366,12 +368,15 @@ const PlayerUI = (props) => {
     }
     
     function nextSong(){
-        setCurrentSong((prev) => (prev + 1) % songList.length)
+        audioPause()
+        currentSong.current = (currentSong.current + 1) % songList.length
+        setSong()
     }
 
     function prevSong(){
-        console.log(songList.at(-2))
-        setCurrentSong((prev) => (prev - 1) % songList.length )
+        audioPause()
+        currentSong.current = (currentSong.current - 1) % songList.length
+        setSong()
     }
 
         return(
@@ -411,8 +416,8 @@ const PlayerUI = (props) => {
                     <Html transform position={[4,4,1]}>
                         <ModeButton isDarkMode={isDarkMode} setDarkMode={setDarkMode} darkModeBtnHandler={darkModeBtnHandler}/>
                     </Html>
-                    <Html transform position={[8,2,0]}>
-                        <SongList songList={songList} setSong={setSong}/>
+                    <Html transform position={[-8,0,0]} rotation={[0,0.4,0]}>
+                        <SongList songList={songList} setSong={setSong} currentSong={currentSong}/>
                     </Html>
                 </group>
 
