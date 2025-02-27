@@ -1,32 +1,60 @@
 import {Html, OrbitControls, Float} from '@react-three/drei'
 import { useEffect, useRef, useState } from 'react'
-import { FontAwesomeIcon } from "@fortawesome/react-fontawesome"
-import {faPlay, faPause, faForwardStep, faBackwardStep, faSun, faMoon, faSpin, faSpinner} from '@fortawesome/free-solid-svg-icons'
 import { useFrame } from '@react-three/fiber'
 import random from "random"
 import axios from "axios"
-import { ListItem, ListItemButton, ListItemText, Box } from '@mui/material';
-import { FixedSizeList } from 'react-window';
+import { ImageList, ImageListItem, ImageListItemBar, IconButton, Button, createTheme, colors, ThemeProvider } from '@mui/material'
+import PlayCircle from "@mui/icons-material/PlayCircle"
+import PlayArrowIcon from "@mui/icons-material/PlayArrow"
+import PauseIcon from "@mui/icons-material/Pause"
+import FastFowardIcon from "@mui/icons-material/FastForward"
+import FastRewindIcon from "@mui/icons-material/FastRewind"
+import LightModeIcon from '@mui/icons-material/LightMode';
+import DarkModeIcon from '@mui/icons-material/DarkMode';
+
+const theme = createTheme({
+    palette: {
+        light: {
+            main: colors.deepOrange[500]
+        },
+        dark: {
+            main: colors.purple[200]
+        }
+    }
+})
 
 const PlayPauseBtn = (props) => {
+    // <button className='controllBtn text-black' onClick={props.playBtnHandler}>{props.isPlay ? <FontAwesomeIcon icon={faPause} /> : <FontAwesomeIcon icon={faPlay} />}</button>
     return(
-        <button className='controllBtn text-black' onClick={props.playBtnHandler}>{props.isPlay ? <FontAwesomeIcon icon={faPause} /> : <FontAwesomeIcon icon={faPlay} />}</button>
+        <ThemeProvider theme={theme}>
+            <Button variant="outlined" disabled={props.loading ? true : false} color={props.isDarkMode ? "light" : "dark"} onClick={props.playBtnHandler}>{props.isPlay ? <PauseIcon /> : <PlayArrowIcon />}</Button>
+        </ThemeProvider>
     )
 }
 const NextSong = (props) => {
+    // <button className='controllBtn text-black' onClick={props.nextSong}><FontAwesomeIcon icon={faForwardStep} /></button>
     return(
-        <button className='controllBtn text-black' onClick={props.nextSong}><FontAwesomeIcon icon={faForwardStep} /></button>
+        <ThemeProvider theme={theme}>
+            <Button variant="outlined" disabled={props.loading ? true : false} color={props.isDarkMode ? "light" : "dark"} onClick={props.nextSong}><FastFowardIcon /></Button>
+        </ThemeProvider>
     )
 }
 const PrevSong = (props) => {
+    // <button className='controllBtn text-black' onClick={props.prevSong}><FontAwesomeIcon icon={faBackwardStep} /></button>
     return(
-        <button className='controllBtn text-black' onClick={props.prevSong}><FontAwesomeIcon icon={faBackwardStep} /></button>
+        <ThemeProvider theme={theme}>
+            <Button variant="outlined" disabled={props.loading ? true : false} onClick={props.prevSong} color={props.isDarkMode ? "light" : "dark"}><FastRewindIcon /></Button>
+        </ThemeProvider>
     )
 }
 
 const ModeButton = (props) => {
+    // <button className='controllBtn text-black' onClick={props.darkModeBtnHandler}>{props.isDarkMode ? <FontAwesomeIcon icon={faSun}/> : <FontAwesomeIcon icon={faMoon}/> }</button>
     return(
-        <button className='controllBtn text-black' onClick={props.darkModeBtnHandler}>{props.isDarkMode ? <FontAwesomeIcon icon={faSun}/> : <FontAwesomeIcon icon={faMoon}/> }</button>
+        <ThemeProvider theme={theme}>
+            <Button variant="outlined" disabled={props.loading ? true : false} onClick={props.darkModeBtnHandler} color={props.isDarkMode ? "light" : "dark"}>{props.isDarkMode ? <LightModeIcon /> : <DarkModeIcon />}</Button>
+        </ThemeProvider>
+        
     )
 }
 
@@ -44,44 +72,74 @@ const SongTitle = (props) => {
 }
 
 const SongList = (props) => {
-    const { songList, setSong, currentSong } = props;
-    const style = {
-        /* From https://css.glass */
-        background: "rgba(0, 0, 0, 0.2);",
-        borderRadius: "16px;",
-        boxShadow: "0 4px 30px rgba(0, 0, 0, 0.1);",
-        backdropFilter: "blur(5px);",
-        webkitBackdropFilter: "blur(5px);",
-        border: "1px solid rgba(0, 0, 0, 0.3);"
-    }
-    function rowItem(ListProps){
-        const {index, style} = ListProps
-        if(songList){
-            return(
-                    <ListItem style={style} key={index} component="div" disablePadding>
-                        <ListItemButton onClick={() => {
-                            currentSong.current = index
-                            setSong()}}>
-                            <ListItemText primary={`${songList[index].name} - ${songList[index].artist}`} />
-                        </ListItemButton>
-                    </ListItem>
-            )
-        }
-        // else return loading
-    }
-    return(
-        <Box sx={{ width: '100%', height: 400, maxWidth: 360 }} className={"songList"}>
-            <FixedSizeList
-                height={400}
-                width={280}
-                itemSize={45}
-                itemCount={songList ? songList.length : 0}
-            >
-                {rowItem}
-            </FixedSizeList>
-        </Box>
+    const { songList, setSong, currentSong, loading } = props;
 
+    return(
+        <ImageList sx={{ width: 500, height: 450, background: "tranparend" }}>
+                {
+                    songList && songList.map((item, index) => (
+                        <ImageListItem key={item.coverImg}>
+                        <img
+                            srcSet={`${item.coverImg}`}
+                            src={`${item.coverImg}`}
+                            alt={item.name}
+                            loading="lazy"
+                        />
+                        <ImageListItemBar
+                            title={item.name}
+                            subtitle={item.artist}
+                            actionIcon={
+                            <IconButton
+                                sx={{ color: 'rgba(255, 255, 255, 0.54)' }}
+                                aria-label={`info about ${item.title}`}
+                                onClick={() => {
+                                    currentSong.current = index
+                                    setSong()
+                                }}
+                                disabled={loading ? true : false}
+                            >
+                                <PlayCircle />
+                            </IconButton>
+                            }
+                        />
+                        </ImageListItem>
+                    ))
+                }
+        </ImageList>
     )
+
+
+
+    // function rowItem(ListProps){
+    //     const {index, style} = ListProps
+    //     if(songList){
+    //         return(
+    //                 <ListItem style={style} key={index} component="div" disablePadding>
+    //                     <ListItemButton onClick={() => {
+    //                         currentSong.current = index
+    //                         setSong()}}
+    //                         selected={currentSong.current === index}
+    //                         >
+    //                         <ListItemText primary={`${songList[index].name} - ${songList[index].artist}`} />
+    //                     </ListItemButton>
+    //                 </ListItem>
+    //         )
+    //     }
+    //     // else return loading
+    // }
+    // return(
+    //     <Box sx={{ width: '100%', height: 400, maxWidth: 800 }} className={"songList"}>
+    //         <FixedSizeList
+    //             height={400}
+    //             width={350}
+    //             itemSize={45}
+    //             itemCount={songList ? songList.length : 0}
+    //         >
+    //             {rowItem}
+    //         </FixedSizeList>
+    //     </Box>
+
+    // )
 }
 
 const MediaPlayer = (props) => {
@@ -284,6 +342,7 @@ const PlayerUI = (props) => {
     
     function setSong(){
         props.setLoading(() => true)
+        audioPause()
         const name = songList.at(currentSong.current).name
         const image = songList.at(currentSong.current).coverImg
         const artist = songList.at(currentSong.current).artist
@@ -368,13 +427,11 @@ const PlayerUI = (props) => {
     }
     
     function nextSong(){
-        audioPause()
         currentSong.current = (currentSong.current + 1) % songList.length
         setSong()
     }
 
     function prevSong(){
-        audioPause()
         currentSong.current = (currentSong.current - 1) % songList.length
         setSong()
     }
@@ -405,19 +462,19 @@ const PlayerUI = (props) => {
                         <SongTitle songName={songName} songArtist={songArtist}/>
                     </Html>
                     <Html transform position={[0,-4,1]}>
-                        <PlayPauseBtn playBtnHandler={playBtnHandler} isPlay={isPlay}/>
+                        <PlayPauseBtn playBtnHandler={playBtnHandler} isPlay={isPlay} isDarkMode={isDarkMode} loading={props.loading}/>
                     </Html>
                     <Html transform position={[2,-4,1]}>
-                        <NextSong nextSong={nextSong} />
+                        <NextSong nextSong={nextSong} isDarkMode={isDarkMode} loading={props.loading}/>
                     </Html>
                     <Html transform position={[-2,-4,1]}>
-                        <PrevSong prevSong={prevSong} />
+                        <PrevSong prevSong={prevSong} isDarkMode={isDarkMode} loading={props.loading}/>
                     </Html>
                     <Html transform position={[4,4,1]}>
-                        <ModeButton isDarkMode={isDarkMode} setDarkMode={setDarkMode} darkModeBtnHandler={darkModeBtnHandler}/>
+                        <ModeButton isDarkMode={isDarkMode} setDarkMode={setDarkMode} darkModeBtnHandler={darkModeBtnHandler} loading={props.loading}/>
                     </Html>
-                    <Html transform position={[-8,0,0]} rotation={[0,0.4,0]}>
-                        <SongList songList={songList} setSong={setSong} currentSong={currentSong}/>
+                    <Html transform position={[-12,0,0]} rotation={[0,0.4,0]}>
+                        <SongList songList={songList} setSong={setSong} currentSong={currentSong} loading={props.loading}/>
                     </Html>
                 </group>
 

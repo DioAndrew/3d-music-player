@@ -23,12 +23,12 @@ function App() {
       </audio>
       <Suspense fallback={Loader}>
         {
-                        loading ?<Backdrop sx={(theme) => ({ color: '#fff', zIndex: theme.zIndex.drawer + 1 })} open>
+                        loading && <Backdrop sx={(theme) => ({ color: '#fff', zIndex: theme.zIndex.drawer + 1 })} open>
                         <CircularProgress color="inherit" />
-                        </Backdrop> : null
+                        </Backdrop>
         }
         <Canvas camera={{position: [0,0,10]}}>
-            <MediaPlayer audioRef={audioRef} setLoading={setLoading}/>
+            <MediaPlayer audioRef={audioRef} setLoading={setLoading} loading={loading}/>
         </Canvas>
       </Suspense>
     </div>
