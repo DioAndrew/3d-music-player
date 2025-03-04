@@ -610,6 +610,9 @@
   .mb-6 {
     margin-bottom: calc(var(--spacing) * 6);
   }
+  .mx-3{
+    margin-inline: calc(var(--spacing) * 3);
+  }
   .block {
     display: block;
   }

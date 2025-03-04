@@ -1,14 +1,14 @@
-import {Html, OrbitControls, Float} from '@react-three/drei'
-import { useEffect, useRef, useState } from 'react'
-import { useFrame } from '@react-three/fiber'
-import random from "random"
-import axios from "axios"
-import { ImageList, ImageListItem, ImageListItemBar, IconButton, Button, createTheme, colors, ThemeProvider } from '@mui/material'
-import PlayCircle from "@mui/icons-material/PlayCircle"
-import PlayArrowIcon from "@mui/icons-material/PlayArrow"
-import PauseIcon from "@mui/icons-material/Pause"
-import FastFowardIcon from "@mui/icons-material/FastForward"
-import FastRewindIcon from "@mui/icons-material/FastRewind"
+import {Html, OrbitControls, Float} from '@react-three/drei';
+import { useEffect, useRef, useState } from 'react';
+import { useFrame } from '@react-three/fiber';
+import random from "random";
+import axios from "axios";
+import { ImageList, ImageListItem, ImageListItemBar, IconButton, Button, createTheme, colors, ThemeProvider, Box, Slider } from '@mui/material';
+import PlayCircle from "@mui/icons-material/PlayCircle";
+import PlayArrowIcon from "@mui/icons-material/PlayArrow";
+import PauseIcon from "@mui/icons-material/Pause";
+import FastFowardIcon from "@mui/icons-material/FastForward";
+import FastRewindIcon from "@mui/icons-material/FastRewind";
 import LightModeIcon from '@mui/icons-material/LightMode';
 import DarkModeIcon from '@mui/icons-material/DarkMode';
 
@@ -143,12 +143,25 @@ const SongList = (props) => {
 }
 
 const MediaPlayer = (props) => {
+    const {songDuration, duration, currentSongTime, seekSong, fullDuration, loading, isDarkMode} = props
     return(
         <div className='mediaPlayer'>
             <div className='flex'>
-                <h2 className='text-black'>{props.songDuration}</h2>
-                <input ref={props.songSliderRef} className='m-2' type="range" min={0} onChange={props.seekSong} name="songSlider" id="songSlider" />
-                <h2 className='text-black'>{props.fullDuration}</h2>
+                <h2 className='text-black mx-3'>{songDuration}</h2>
+                {/* <input ref={props.songSliderRef} className='mx-3' type="range" min={0} onChange={props.seekSong} name="songSlider" id="songSlider" /> */}
+                <Box sx={{ width: 300 }}>
+                    <ThemeProvider theme={theme}>
+                        <Slider
+                            size="small"
+                            value={currentSongTime.current}
+                            max={duration.current}
+                            onChange={seekSong}
+                            disabled={loading ? true : false}
+                            color={isDarkMode ? "light" : "dark"}
+                        />
+                    </ThemeProvider>
+                </Box>
+                <h2 className='text-black mx-3'>{fullDuration}</h2>
             </div>
         </div>
     )
@@ -176,7 +189,7 @@ const BoxBackground = (props) => {
         }
         position.map((pos, index) => {
             box.push(
-                <mesh key={i} position={pos} ref={(el) => props.boxRef.current[index] = el}>
+                <mesh position={pos} ref={(el) => props.boxRef.current[index] = el}>
                     <boxGeometry />
                     <meshStandardMaterial />
                 </mesh>
@@ -297,9 +310,12 @@ const PlayerUI = (props) => {
     const [isPlay, setPlay] = useState(false)
     const [songDuration, setSongDuration] = useState("00:00")
     const currentSong = useRef(0)
+    const duration = useRef(0)
+    const currentSongTime = useRef(0)
+
+    // const songSliderRef = useRef()
     
-    const songSliderRef = useRef()
-    const [fullDuration, setFullDuration] = useState()
+    const [fullDuration, setFullDuration] = useState("00:00")
     const [songList, setSongList] = useState(false)
     const [songName, setSongName] = useState()
     const [songArtist, setSongArtist] = useState()
@@ -347,8 +363,8 @@ const PlayerUI = (props) => {
         const image = songList.at(currentSong.current).coverImg
         const artist = songList.at(currentSong.current).artist
         coverImgRef.current.src = image
-        setSongName(name)
-        setSongArtist(artist)
+        setSongName(() => name)
+        setSongArtist(() => artist)
         console.log(`set song ..... ${name} `)
         props.audioRef.current.src = `https://andrew26.pythonanywhere.com/music/${name}.mp3`
     }
@@ -363,9 +379,10 @@ const PlayerUI = (props) => {
     function getSongFullDuration(){
         let formatMinute = Math.floor(props.audioRef.current.duration / 60).toString().padStart(2, "0")
         let formatSecound = Math.floor(props.audioRef.current.duration % 60).toString().padStart(2, "0")
-        setFullDuration(() => `${formatMinute}:${formatSecound}`) 
-        songSliderRef.current.setAttribute('max', props.audioRef.current.duration)
-        songSliderRef.current.value = 0
+        setFullDuration(() => `${formatMinute}:${formatSecound}`)
+        // songSliderRef.current.setAttribute('max', props.audioRef.current.duration)
+        duration.current = props.audioRef.current.duration
+        currentSongTime.current = 0
         props.setLoading(() => false)
         
     }
@@ -376,8 +393,8 @@ const PlayerUI = (props) => {
         let secound = Math.floor(props.audioRef.current.currentTime % 60)
         let formatMinute = minute.toString().padStart(2, "0")
         let formatSecound = secound.toString().padStart(2, "0")
+        currentSongTime.current = props.audioRef.current.currentTime
         setSongDuration(() => `${formatMinute}:${formatSecound}`)
-        songSliderRef.current.value = props.audioRef.current.currentTime
         if(props.audioRef.current.currentTime === props.audioRef.current.duration){
            audioPlay()
             }
@@ -439,41 +456,36 @@ const PlayerUI = (props) => {
         return(
             <>
                 <group>
-                    <Float rotationIntensity={1} floatIntensity={1} floatingRange={[-5,1.5]}>
+                    <Float key={"Floating Box"} rotationIntensity={1} floatIntensity={1} floatingRange={[-5,1.5]}>
                         <BoxBackground boxRef={boxRef}/>
                     </Float>
                 </group>
                 <group>
-                    <Html transform  position={[0,-3,0]}>
-                        <MediaPlayer seekSong={seekSong} songDuration={songDuration} songSliderRef={songSliderRef} fullDuration={fullDuration}/>
+                    <Html key={"MediaPlayer"} transform  position={[0,-3,0]}>
+                        {/* <MediaPlayer seekSong={seekSong} songDuration={songDuration} songSliderRef={songSliderRef} fullDuration={fullDuration}/> */}
+                        <MediaPlayer seekSong={seekSong} songDuration={songDuration} fullDuration={fullDuration} duration={duration} currentSongTime={currentSongTime} loading={props.loading} isDarkMode={isDarkMode}/>
                     </Html>
                     <group ref={imageRef} position={[0,0,1]}>    
-                        <Html transform position={[0,2.5,1]}>
+                        <Html key={"SongImage"} transform position={[0,2.5,1]}>
                             <SongImage coverImgRef={coverImgRef}/>
                         </Html>
-                        {/* <Html transform rotation={[0,2.1,0]} position={[1.5,2,-1]}>
-                            <SongImage />
-                        </Html>
-                        <Html transform rotation={[0,-2.1,0]} position={[-1.5,2,-1]}>
-                            <SongImage />
-                        </Html> */}
                     </group>
-                    <Html transform position={[0,-1,1]}>
+                    <Html key={"SongTitle"} transform position={[0,-1,1]}>
                         <SongTitle songName={songName} songArtist={songArtist}/>
                     </Html>
-                    <Html transform position={[0,-4,1]}>
+                    <Html key={"PlayButton"} transform position={[0,-4,1]}>
                         <PlayPauseBtn playBtnHandler={playBtnHandler} isPlay={isPlay} isDarkMode={isDarkMode} loading={props.loading}/>
                     </Html>
-                    <Html transform position={[2,-4,1]}>
+                    <Html key={"NextButton"} transform position={[2,-4,1]}>
                         <NextSong nextSong={nextSong} isDarkMode={isDarkMode} loading={props.loading}/>
                     </Html>
-                    <Html transform position={[-2,-4,1]}>
+                    <Html key={"PrevButton"} transform position={[-2,-4,1]}>
                         <PrevSong prevSong={prevSong} isDarkMode={isDarkMode} loading={props.loading}/>
                     </Html>
-                    <Html transform position={[4,4,1]}>
+                    <Html key={"ModeButton"} transform position={[4,4,1]}>
                         <ModeButton isDarkMode={isDarkMode} setDarkMode={setDarkMode} darkModeBtnHandler={darkModeBtnHandler} loading={props.loading}/>
                     </Html>
-                    <Html transform position={[-12,0,0]} rotation={[0,0.4,0]}>
+                    <Html key={"SongList"} transform position={[-12,0,0]} rotation={[0,0.4,0]}>
                         <SongList songList={songList} setSong={setSong} currentSong={currentSong} loading={props.loading}/>
                     </Html>
                 </group>
