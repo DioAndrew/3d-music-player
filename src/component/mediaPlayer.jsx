@@ -27,7 +27,7 @@ const PlayPauseBtn = (props) => {
     // <button className='controllBtn text-black' onClick={props.playBtnHandler}>{props.isPlay ? <FontAwesomeIcon icon={faPause} /> : <FontAwesomeIcon icon={faPlay} />}</button>
     return(
         <ThemeProvider theme={theme}>
-            <Button variant="outlined" disabled={props.loading ? true : false} color={props.isDarkMode ? "light" : "dark"} onClick={props.playBtnHandler}>{props.isPlay ? <PauseIcon /> : <PlayArrowIcon />}</Button>
+            <Button variant="outlined" disabled={props.loading | props.error != null ? true : false} color={props.isDarkMode ? "light" : "dark"} onClick={props.playBtnHandler}>{props.isPlay ? <PauseIcon /> : <PlayArrowIcon />}</Button>
         </ThemeProvider>
     )
 }
@@ -35,7 +35,7 @@ const NextSong = (props) => {
     // <button className='controllBtn text-black' onClick={props.nextSong}><FontAwesomeIcon icon={faForwardStep} /></button>
     return(
         <ThemeProvider theme={theme}>
-            <Button variant="outlined" disabled={props.loading ? true : false} color={props.isDarkMode ? "light" : "dark"} onClick={props.nextSong}><FastFowardIcon /></Button>
+            <Button variant="outlined" disabled={props.loading | props.error != null ? true : false} color={props.isDarkMode ? "light" : "dark"} onClick={props.nextSong}><FastFowardIcon /></Button>
         </ThemeProvider>
     )
 }
@@ -43,7 +43,7 @@ const PrevSong = (props) => {
     // <button className='controllBtn text-black' onClick={props.prevSong}><FontAwesomeIcon icon={faBackwardStep} /></button>
     return(
         <ThemeProvider theme={theme}>
-            <Button variant="outlined" disabled={props.loading ? true : false} onClick={props.prevSong} color={props.isDarkMode ? "light" : "dark"}><FastRewindIcon /></Button>
+            <Button variant="outlined" disabled={props.loading | props.error != null ? true : false} onClick={props.prevSong} color={props.isDarkMode ? "light" : "dark"}><FastRewindIcon /></Button>
         </ThemeProvider>
     )
 }
@@ -143,7 +143,7 @@ const SongList = (props) => {
 }
 
 const MediaPlayer = (props) => {
-    const {songDuration, duration, currentSongTime, seekSong, fullDuration, loading, isDarkMode} = props
+    const {songDuration, duration, currentSongTime, seekSong, fullDuration, loading, isDarkMode, error} = props
     return(
         <div className='mediaPlayer'>
             <div className='flex'>
@@ -156,7 +156,7 @@ const MediaPlayer = (props) => {
                             value={currentSongTime.current}
                             max={duration.current}
                             onChange={seekSong}
-                            disabled={loading ? true : false}
+                            disabled={loading | error != null ? true : false}
                             color={isDarkMode ? "light" : "dark"}
                         />
                     </ThemeProvider>
@@ -176,7 +176,6 @@ const SongImage = (props) => {
 const BoxBackground = (props) => {
         const position = []
         const box = []
-        let i = 0
         for(let y = -10; y <= 15; y += 4){
             for(let x = -30; x <= 30; x += 4){
                 position.push([x,y,-1])
@@ -189,7 +188,7 @@ const BoxBackground = (props) => {
         }
         position.map((pos, index) => {
             box.push(
-                <mesh position={pos} ref={(el) => props.boxRef.current[index] = el}>
+                <mesh key={index} position={pos} ref={(el) => props.boxRef.current[index] = el}>
                     <boxGeometry />
                     <meshStandardMaterial />
                 </mesh>
@@ -334,20 +333,20 @@ const PlayerUI = (props) => {
         const endpoint = `https://andrew26.pythonanywhere.com/music/songlist`
         useEffect(() => {
             async function fectData(){
-                props.setLoading(() => true)
-                const {data} = await axios.get(endpoint)
-                setSongList(() => data)
-                coverImgRef.current.src = data[0].coverImg
-                setSongName(data[0].name)
-                setSongArtist(data[0].artist)
-                props.audioRef.current.src = `https://andrew26.pythonanywhere.com/music/${data[0].name}.mp3`
+                try {
+                    props.setLoading(() => true)
+                    const {data} = await axios.get(endpoint)
+                    setSongList(() => data)
+                    coverImgRef.current.src = data[0].coverImg
+                    setSongName(data[0].name)
+                    setSongArtist(data[0].artist)
+                    props.audioRef.current.src = `https://andrew26.pythonanywhere.com/music/${data[0].name}.mp3`
+                } catch (error) {
+                    props.setError(() => error.message)
+                }
+                
             }
-            try {
-                fectData()
-            } catch (error) {
-                console.log(error)
-            }
-            
+            fectData()
         }, [])
     }
     GetSongList()
@@ -383,6 +382,7 @@ const PlayerUI = (props) => {
         // songSliderRef.current.setAttribute('max', props.audioRef.current.duration)
         duration.current = props.audioRef.current.duration
         currentSongTime.current = 0
+        props.setError(() => null)
         props.setLoading(() => false)
         
     }
@@ -411,6 +411,22 @@ const PlayerUI = (props) => {
         
         props.audioRef.current.addEventListener("timeupdate", timeUpdate)
         props.audioRef.current.addEventListener("loadeddata", getSongFullDuration)
+        props.audioRef.current.addEventListener("error", () => {
+            const error = props.audioRef.current.error
+            switch (error.code) {
+                case MediaError.MEDIA_ERR_SRC_NOT_SUPPORTED:
+                    props.setError(() => "Music not found or your browser not supported")
+                    break;
+                case MediaError.MEDIA_ERR_NETWORK:
+                    props.setError(() => "Network Error")
+                    break
+                default:
+                    props.setError(() => "Unknown Error")
+                    break;
+            }
+            
+            props.setLoading(() => false)
+        });
         
         boxRef.current.map((el) => {
             el.material.color.set(random.choice(boxColor))
@@ -463,7 +479,7 @@ const PlayerUI = (props) => {
                 <group>
                     <Html key={"MediaPlayer"} transform  position={[0,-3,0]}>
                         {/* <MediaPlayer seekSong={seekSong} songDuration={songDuration} songSliderRef={songSliderRef} fullDuration={fullDuration}/> */}
-                        <MediaPlayer seekSong={seekSong} songDuration={songDuration} fullDuration={fullDuration} duration={duration} currentSongTime={currentSongTime} loading={props.loading} isDarkMode={isDarkMode}/>
+                        <MediaPlayer seekSong={seekSong} songDuration={songDuration} fullDuration={fullDuration} duration={duration} currentSongTime={currentSongTime} loading={props.loading} isDarkMode={isDarkMode} error={props.error}/>
                     </Html>
                     <group ref={imageRef} position={[0,0,1]}>    
                         <Html key={"SongImage"} transform position={[0,2.5,1]}>
@@ -474,13 +490,13 @@ const PlayerUI = (props) => {
                         <SongTitle songName={songName} songArtist={songArtist}/>
                     </Html>
                     <Html key={"PlayButton"} transform position={[0,-4,1]}>
-                        <PlayPauseBtn playBtnHandler={playBtnHandler} isPlay={isPlay} isDarkMode={isDarkMode} loading={props.loading}/>
+                        <PlayPauseBtn playBtnHandler={playBtnHandler} isPlay={isPlay} isDarkMode={isDarkMode} loading={props.loading} error={props.error}/>
                     </Html>
                     <Html key={"NextButton"} transform position={[2,-4,1]}>
-                        <NextSong nextSong={nextSong} isDarkMode={isDarkMode} loading={props.loading}/>
+                        <NextSong nextSong={nextSong} isDarkMode={isDarkMode} loading={props.loading} error={props.error}/>
                     </Html>
                     <Html key={"PrevButton"} transform position={[-2,-4,1]}>
-                        <PrevSong prevSong={prevSong} isDarkMode={isDarkMode} loading={props.loading}/>
+                        <PrevSong prevSong={prevSong} isDarkMode={isDarkMode} loading={props.loading} error={props.error}/>
                     </Html>
                     <Html key={"ModeButton"} transform position={[4,4,1]}>
                         <ModeButton isDarkMode={isDarkMode} setDarkMode={setDarkMode} darkModeBtnHandler={darkModeBtnHandler} loading={props.loading}/>
