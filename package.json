@@ -1,4 +1,5 @@
 {
+  "homepage": "https://DioAndrew.github.io/MusicPlayer",
   "name": "3d_media_player",
   "version": "0.1.0",
   "private": true,
@@ -19,6 +20,7 @@
     "@tailwindcss/cli": "^4.0.2",
     "axios": "^1.7.9",
     "cra-template": "1.2.0",
+    "gh-pages": "^6.3.0",
     "maath": "^0.10.8",
     "random": "^5.1.1",
     "react": "^18.3.1",
@@ -33,6 +35,8 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
+    "predeploy": "npm run build",
+    "deploy": "gh-pages -d build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"
   },
